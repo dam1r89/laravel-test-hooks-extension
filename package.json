@@ -1,5 +1,5 @@
 {
-  "name": "db-snap",
+  "name": "test-hooks",
   "private": true,
   "engines": {
     "node": ">=0.8.0"

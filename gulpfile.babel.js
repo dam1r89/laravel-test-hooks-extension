@@ -129,7 +129,7 @@ gulp.task('wiredep', () => {
 gulp.task('package', function () {
   var manifest = require('./dist/manifest.json');
   return gulp.src('dist/**')
-      .pipe($.zip('db snap-' + manifest.version + '.zip'))
+      .pipe($.zip('test-hooks-' + manifest.version + '.zip'))
       .pipe(gulp.dest('package'));
 });
 

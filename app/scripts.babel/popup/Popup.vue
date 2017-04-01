@@ -10,25 +10,39 @@
 			<div v-if="message" class="alert message">
 				{{ message }}
 			</div>
-			<ul class="states">
-				<li v-for="state in states">
-					{{ state.name }}
-					<span class="time pull-right" v-text="ago(state.time.date)"></span>
-					<div class="text-right">
-						<a href :disabled="busy" @click.prevent="restore(state.name)">
-							Restore
-						</a>
-					</div>
-				</li>	
-			</ul>	
-			<div>
-				<form @submit.prevent="saveState">
-					<input :disabled="busy" v-model="stateName" placeholder="State Name"><button>Save State</button>
-					<label>
-						<input type="checkbox" v-model="force">
-						Force
-					</label>
+			<a href @click.prevent="tab = 'states'">States</a>
+			<a href @click.prevent="tab = 'dates'">Dates</a>
+			<div v-if="tab == 'states'">
+				<ul class="states">
+					<li v-for="state in states">
+						{{ state.name }}
+						<span class="time pull-right" v-text="ago(state.time.date)"></span>
+						<div class="text-right">
+							<a href :disabled="busy" @click.prevent="restore(state.name)">
+								Restore
+							</a>
+						</div>
+					</li>	
+				</ul>	
+				<div>
+					<form @submit.prevent="saveState">
+						<input :disabled="busy" v-model="stateName" placeholder="State Name"><button>Save State</button>
+						<label>
+							<input type="checkbox" v-model="force">
+							Force
+						</label>
+					</form>
+				</div>
+			</div>
+			<div v-if="tab == 'dates'">
+				<p>
+					Test date <span v-if="!date" v-text="date">is not set.</span>
+				</p>
+				<form @submit.prevent="setDate(date)">
+					<input v-model="date" type="datetime-local">
+					<button>Set Date</button>
 				</form>
+				<button type="button" @click="setDate(null)">Clear Test Date</button>
 			</div>
 		</div>		
 		<div v-else>
@@ -79,15 +93,17 @@
 	export default {
 		data(){
 			return {
-				baseUrl: '/tests',
+				tab: 'states',
+				origin: '',
+				baseUrl: '/test-hooks',
 				busy: true,
 				testable: false,
 				states: [],
 				stateName: '',
-				origin: '',
+				force: false,
 				error: '',
 				message: '',
-				force: false
+				date: '',
 			}
 		},
 		methods: {
@@ -108,6 +124,20 @@
 						this.error = res.response.data.message;
 						this.busy = false;
 					})
+			},
+			setDate(date) {
+				this.busy = true;
+				this.message = this.error = '';
+				axios.put(this.method('date'), {date})
+					.then(() => {
+						this.message = 'Saved, refresh page!';
+						this.stateName = '';
+						this.loadStates();
+					}, res => {
+						this.error = res.response.data.message;
+						this.busy = false;
+					})
+
 			},
 			saveState() {
 				this.busy = true;
@@ -134,9 +164,11 @@
 
 					axios.get(url)
 						.then(res => {
-							this.states = res.data;
+							this.states = res.data.states;
+							this.date = res.data.date && moment(res.data.date.date).format('Y-MM-DDTHH:mm');
 							this.testable = true;
 							this.busy = false;
+							axios.defaults.headers.common['X-CSRF-TOKEN'] =  res.data.csrfToken;
 						}, (res) => {
 							console.log(res);
 							this.testable = false;
